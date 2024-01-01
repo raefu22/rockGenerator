@@ -16,7 +16,7 @@ cmds.separator(height = 10)
 nameparam = cmds.textFieldGrp(label = 'Name ')
 cmds.separator(height = 10)
 cmds.intSliderGrp("num", label="Number of Rocks ", field = True, min = 1, max = 40, v = 15)
-
+cmds.colorSliderGrp('colorpicked', label= 'Color')
 cmds.separator(height = 10)
 
 submitrow = cmds.rowLayout(numberOfColumns=2, p=maincol)
@@ -46,7 +46,7 @@ def createRock():
     inputname = cmds.textFieldGrp(nameparam, query = True, text = True)
    
     num = cmds.intSliderGrp("num", q = True, v=True)
-    
+    maincolor = cmds.colorSliderGrp('colorpicked', q = True, rgbValue = True)
     curvename = cmds.ls(selection = True)
     
     for x in range(1, num+1):
@@ -128,16 +128,10 @@ def createRock():
         cmds.connectAttr (name + 'place2dTexture1.outUV', name + 'noise1.uv')
         cmds.connectAttr(name + 'place2dTexture1.outUvFilterSize', name + 'noise1.uvFilterSize')
         
-        #cmds.defaultNavigation(createNew= True, destination= name + 'noise1.colorOffset')
-        #cmds.createRenderNode -allWithTexturesUp 
-        #cmds.defaultNavigation(force=True, connectToExisting=True, source=%node, destination= name + 'noise1.colorOffset')
-        #cmds.defaultNavigation(defaultTraversal=True, destination= name + 'noise1.colorOffset')
         cmds.shadingNode('simplexNoise', asTexture=True, n = name + 'simplexNoise1')
         cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture2')
         cmds.connectAttr(name + 'place2dTexture2.outUV', name + 'simplexNoise1.uv')
         cmds.connectAttr(name +'place2dTexture2.outUvFilterSize', name + 'simplexNoise1.uvFilterSize')
-        #cmds.defaultNavigation(force=True, connectToExisting=True, source=name + 'simplexNoise1', destination=name + 'noise1.colorOffset')
-        #cmds.window -e -vis false createRenderNodeWindow;
         cmds.connectAttr(name + 'simplexNoise1.outColor', name + 'noise1.colorOffset', force=True)
         
         cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply1')
@@ -170,30 +164,37 @@ def createRock():
         #adjustments
         cmds.setAttr(name + 'noise1.amplitude', 0.42)
         cmds.setAttr(name + 'noise1.ratio', 1.0)
-        cmds.setAttr(name + 'noise1.frequencyRatio', 29.636)
-        cmds.setAttr(name + 'noise1.frequency', 95.804)
+        cmds.setAttr(name + 'noise1.frequencyRatio', random.uniform(29.636, 96))
+        cmds.setAttr(name + 'noise1.frequency', random.uniform(88, 99))
         cmds.setAttr(name + 'noise1.density', 1.0)
         cmds.setAttr(name + 'noise1.spottyness', 0)
-        cmds.setAttr(name + 'noise1.sizeRand', 0)
+        cmds.setAttr(name + 'noise1.sizeRand', random.uniform(0,1))
         cmds.setAttr(name + 'noise1.randomness', 1.0)
         cmds.setAttr(name + 'noise1.colorGain',  0.804, 0.771, 0.763, type='double3')
         cmds.setAttr(name + 'noise1.alphaGain', 0.392)
         
-        cmds.setAttr(name + 'simplexNoise1.scale', 4.476)
-        cmds.setAttr(name + 'simplexNoise1.amplitude', 0.399)
+        
+        cmds.setAttr(name + 'simplexNoise1.amplitude', random.uniform(0.01, 0.7))
         cmds.setAttr(name + 'simplexNoise1.threshold', 0.0)
         cmds.setAttr(name + 'simplexNoise1.ratio', 0.707)
         cmds.setAttr(name + 'simplexNoise1.frequency', 6.853)
         cmds.setAttr(name + 'simplexNoise1.frequencyRatio', 1.0)
         cmds.setAttr(name + 'simplexNoise1.gamma', .455)
-        
-        cmds.setAttr(name + 'noiseColor.amplitude', 0.182)
+        if (random.uniform(0,1) < 0.2):
+            cmds.setAttr(name + 'simplexNoise1.noiseType', 2)
+            cmds.setAttr(name + 'simplexNoise1.scale', random.uniform(0,6.3))
+        else:
+            cmds.setAttr(name + 'simplexNoise1.scale', random.uniform(0,10))
+            
+        cmds.setAttr(name + 'noiseColor.amplitude', random.uniform(0.182, 1))
         cmds.setAttr(name + 'noiseColor.ratio', 0.643)
         cmds.setAttr(name + 'noiseColor.frequencyRatio', 1.566)
         cmds.setAttr(name + 'noiseColor.frequency', 9.091)
         cmds.setAttr(name + 'noiseColor.noiseType', 4)
         cmds.setAttr(name + 'noiseColor.colorGain', 1, 0.712, 0.712, type='double3')
-        cmds.setAttr(name + 'noiseColor.colorOffset', 0.224, 0.171, 0.171, type='double3')
+        #cmds.setAttr(name + 'noiseColor.colorGain', maincolor[0], maincolor[1], maincolor[2], type='double3')
+        cmds.setAttr(name + 'noiseColor.colorOffset', maincolor[0], maincolor[1], maincolor[2], type='double3')
+        #cmds.setAttr(name + 'noiseColor.colorOffset', 0.224, 0.171, 0.171, type='double3')
         cmds.setAttr(name + 'noiseColor.alphaGain', 1.0)
         
         cmds.setAttr(name + 'mountain1.snowColor', 1, 1, 1, type='double3')
@@ -201,16 +202,16 @@ def createRock():
         cmds.setAttr(name + 'mountain1.amplitude', 1.0)
         cmds.setAttr(name + 'mountain1.snowRoughness', 0.4)
         cmds.setAttr(name + 'mountain1.rockRoughness', 0.707)
-        cmds.setAttr(name + 'mountain1.boundary', 0.874)
-        cmds.setAttr(name + 'mountain1.snowAltitude', 0.5)
-        cmds.setAttr(name + 'mountain1.snowDropoff', 2.0)
-        cmds.setAttr(name + 'mountain1.snowSlope', 3.0)
+        cmds.setAttr(name + 'mountain1.boundary', random.uniform(0.874,1))
+        cmds.setAttr(name + 'mountain1.snowAltitude', random.uniform(0, 0.5))
+        cmds.setAttr(name + 'mountain1.snowDropoff', random.uniform(0, 2.0))
+        cmds.setAttr(name + 'mountain1.snowSlope', random.uniform(0, 3.0))
         
         
         cmds.setAttr(name + 'fractal1.amplitude', 1.0)
         cmds.setAttr(name + 'fractal1.threshold', 0.0)
         cmds.setAttr(name + 'fractal1.ratio', 0.972)
-        cmds.setAttr(name + 'fractal1.frequencyRatio', 2.0)
+        cmds.setAttr(name + 'fractal1.frequencyRatio', random.uniform(2.0, 3.4))
         cmds.setAttr(name + 'fractal1.bias', 0.636)
         
         #for normal map
@@ -233,11 +234,7 @@ def createRock():
         
         
         
-        '''
-        cmds.shadingNode('rock', asTexture = True, n = name + 'rock')
-        cmds.shadingNode('place3dTexture', asUtility = True, n = name + 'place3dTexture')
-        cmds.connectAttr (name + 'place3dTexture.wim[0]', name + 'rock.pm')
-        cmds.connectAttr(name + 'rock.outColor', name + 'shader.baseColor')
-        '''
+     
         #smooth
-        #cmds.polySmooth(mth=0, sdt=2, ovb=1, ofb=3, ofc=0, ost=0, ocr=0, dv=2, bnr=1, c=1, kb=1, ksb=1, khe=0, kt=1, kmb=1, suv=1, peh=0, sl=1, dpe=1, ps=0.1, ro=1, ch=1)
+        cmds.select(name)
+        cmds.polySmooth(mth=0, sdt=2, ovb=1, ofb=3, ofc=0, ost=0, ocr=0, dv=2, bnr=1, c=1, kb=1, ksb=1, khe=0, kt=1, kmb=1, suv=1, peh=0, sl=1, dpe=1, ps=0.1, ro=1, ch=1)
