@@ -1,5 +1,6 @@
 import maya.cmds as cmds
 import random
+import colorsys
 
 #UI
 window = cmds.window(title='Rock Generator', menuBar = True, width=250)
@@ -17,6 +18,7 @@ nameparam = cmds.textFieldGrp(label = 'Name ')
 cmds.separator(height = 10)
 cmds.intSliderGrp("num", label="Number of Rocks ", field = True, min = 1, max = 40, v = 15)
 cmds.colorSliderGrp('colorpicked', label= 'Color')
+cmds.floatSliderGrp('colorvariation', label="Color Variation ", field = True, min = 0, max = 10, v = 0.5)
 cmds.separator(height = 10)
 
 submitrow = cmds.rowLayout(numberOfColumns=2, p=maincol)
@@ -47,6 +49,8 @@ def createRock():
    
     num = cmds.intSliderGrp("num", q = True, v=True)
     maincolor = cmds.colorSliderGrp('colorpicked', q = True, rgbValue = True)
+    colorvariation = cmds.floatSliderGrp('colorvariation', q = True, v = True)
+    colorvariation = colorvariation/20
     curvename = cmds.ls(selection = True)
     
     for x in range(1, num+1):
@@ -173,7 +177,6 @@ def createRock():
         cmds.setAttr(name + 'noise1.colorGain',  0.804, 0.771, 0.763, type='double3')
         cmds.setAttr(name + 'noise1.alphaGain', 0.392)
         
-        
         cmds.setAttr(name + 'simplexNoise1.amplitude', random.uniform(0.01, 0.7))
         cmds.setAttr(name + 'simplexNoise1.threshold', 0.0)
         cmds.setAttr(name + 'simplexNoise1.ratio', 0.707)
@@ -191,10 +194,14 @@ def createRock():
         cmds.setAttr(name + 'noiseColor.frequencyRatio', 1.566)
         cmds.setAttr(name + 'noiseColor.frequency', 9.091)
         cmds.setAttr(name + 'noiseColor.noiseType', 4)
-        cmds.setAttr(name + 'noiseColor.colorGain', 1, 0.712, 0.712, type='double3')
+        cmds.setAttr(name + 'noiseColor.colorGain', 0.712, 0.712, 0.712, type='double3')
         #cmds.setAttr(name + 'noiseColor.colorGain', maincolor[0], maincolor[1], maincolor[2], type='double3')
-        cmds.setAttr(name + 'noiseColor.colorOffset', maincolor[0], maincolor[1], maincolor[2], type='double3')
-        #cmds.setAttr(name + 'noiseColor.colorOffset', 0.224, 0.171, 0.171, type='double3')
+        hsv = colorsys.rgb_to_hsv(maincolor[0], maincolor[1], maincolor[2])
+        hue = hsv[0] + random.uniform(-colorvariation/2, colorvariation/2)
+        print(hsv)
+        rgb = colorsys.hsv_to_rgb(hue, hsv[1], hsv[2])
+        print(rgb)
+        cmds.setAttr(name + 'noiseColor.colorOffset', rgb[0], rgb[1], rgb[2], type='double3')
         cmds.setAttr(name + 'noiseColor.alphaGain', 1.0)
         
         cmds.setAttr(name + 'mountain1.snowColor', 1, 1, 1, type='double3')
@@ -206,13 +213,14 @@ def createRock():
         cmds.setAttr(name + 'mountain1.snowAltitude', random.uniform(0, 0.5))
         cmds.setAttr(name + 'mountain1.snowDropoff', random.uniform(0, 2.0))
         cmds.setAttr(name + 'mountain1.snowSlope', random.uniform(0, 3.0))
-        
+        cmds.setAttr(name + 'mountain1.colorOffset', 0.041958, 0.041958, 0.041958, type='double3')
         
         cmds.setAttr(name + 'fractal1.amplitude', 1.0)
         cmds.setAttr(name + 'fractal1.threshold', 0.0)
         cmds.setAttr(name + 'fractal1.ratio', 0.972)
         cmds.setAttr(name + 'fractal1.frequencyRatio', random.uniform(2.0, 3.4))
         cmds.setAttr(name + 'fractal1.bias', 0.636)
+        cmds.setAttr(name + 'fractal1.colorOffset', 0.13986, 0.13986, 0.13986, type='double3')
         
         #for normal map
         cmds.shadingNode('layeredTexture', asTexture=True, n = name + 'layeredTexture1') 
@@ -231,8 +239,6 @@ def createRock():
         cmds.shadingNode('bump2d', asUtility=True, n = name + 'bump2d1')
         cmds.connectAttr(name + 'layeredTexture1.outAlpha', name + 'bump2d1.bumpValue', f = True)
         cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
-        
-        
         
      
         #smooth
