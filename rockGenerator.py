@@ -2,27 +2,65 @@ import maya.cmds as cmds
 import random
 import colorsys
 
+def showColorOp(*args):
+    showCheckbox = cmds.checkBoxGrp(applyMaterials, q = True)
+    cmds.colorSliderGrp(pickColor, edit=True, enable=True)
+    cmds.floatSliderGrp(colorSpread, edit=True, enable=True)
+   
+def hideColorOp(*args):
+    showCheckbox = cmds.checkBoxGrp(applyMaterials, q = True, vis = False, v1 = False)
+    cmds.colorSliderGrp(pickColor, edit=True, enable=False)
+    cmds.floatSliderGrp(colorSpread, edit=True, enable=False)
+    
+def showScatter(*args):
+    showCheckbox = cmds.checkBoxGrp(useCurve, q = True)
+    cmds.floatSliderGrp(locationScatter, edit=True, enable=True)
+    #cmds.text(curveInstructions, enable=False)
+   
+def hideScatter(*args):
+    showCheckbox = cmds.checkBoxGrp(useCurve, q = True, vis = False, v1 = False)
+    cmds.floatSliderGrp(locationScatter, edit=True, enable=False)
+    #cmds.text(curveInstructions, enable=True)
+
 #UI
 window = cmds.window(title='Rock Generator', menuBar = True, width=250)
 container = cmds.columnLayout()
 cols = cmds.rowLayout(numberOfColumns=3, p=container)
 
 leftmar = cmds.columnLayout(p=cols)
-cmds.text('         ', p =leftmar)
+cmds.text('       ', p =leftmar)
 
 maincol = cmds.columnLayout('Block', p=cols)
 cmds.text('            ')
-cmds.text('   Select an EP Curve or Bezier Curve to place the rocks along')
+
 cmds.separator(height = 10)
 nameparam = cmds.textFieldGrp(label = 'Name ')
 cmds.separator(height = 10)
 cmds.intSliderGrp("num", label="Number of Rocks ", field = True, min = 1, max = 40, v = 15)
-cmds.colorSliderGrp('colorpicked', label= 'Color')
-cmds.floatSliderGrp('colorvariation', label="Color Variation ", field = True, min = 0, max = 10, v = 0.5)
+cmds.separator(height = 10)
+
+curveInstructions = cmds.text('                Select an EP Curve or Bezier Curve to place the rocks along?')
+cmds.separator(height = 5)
+useCurve = cmds.checkBoxGrp('useCurve', numberOfCheckBoxes=1, label='Use Curve ', v1=False, onc = hideScatter, ofc = showScatter)
+
+locationScatter = cmds.floatSliderGrp("spread", label="Location Scatter ", field = True, min = 1, max = 50, v = 20)
+
+#cmds.text(curveInstructions, enable=False)
+cmds.separator(height = 10)
+applyMaterials = cmds.checkBoxGrp("applyMaterials", numberOfCheckBoxes=1, label='Apply Materials ', v1=False, onc = showColorOp, ofc = hideColorOp)
+
+cmds.separator(height = 5)
+pickColor = cmds.colorSliderGrp('colorpicked', label= 'Color', rgb=(0.272, 0.240, 0.237))
+cmds.separator(height = 5)
+colorSpread = cmds.floatSliderGrp('colorvariation', label="Color Variation ", field = True, min = 0, max = 10, v = 0.5)
+
+cmds.colorSliderGrp(pickColor, edit=True, enable=False)
+cmds.floatSliderGrp(colorSpread, edit=True, enable=False)
+
 cmds.separator(height = 10)
 
 submitrow = cmds.rowLayout(numberOfColumns=2, p=maincol)
-cmds.text(label='                                                                                           ')
+cmds.text(label='                                                                                                    ')
 cmds.button(label="Create Rock(s)", c="createRock()", p = submitrow)
 
 cmds.separator(height = 10, p = maincol)
@@ -35,19 +73,71 @@ def appendName(name, textstring):
     textstring = name + textstring
     return textstring
     
+def normalDistrib(mean, std, size):
+    numlist = []
+    upperlim = mean + std
+    otherupperlim = mean - std
+    controlnum = int(size*0.341)
+    for i in range(controlnum):
+        numlist.append(random.uniform(mean, upperlim))
+        numlist.append(random.uniform(otherupperlim, mean))
+    lowerlim = upperlim
+    upperlim = upperlim + std
+    otherlowerlim = otherupperlim
+    otherupperlim = otherupperlim - std
+    if (otherupperlim < 0):
+        otherupperlim = 0
+    
+    controlnum = int(size*0.136)
+    for i in range(controlnum):
+        numlist.append(random.uniform(lowerlim, upperlim))
+        numlist.append(random.uniform(otherupperlim, otherlowerlim))
+    lowerlim = upperlim
+    upperlim = upperlim + std
+    otherlowerlim = otherupperlim
+    otherupperlim = otherupperlim - std
+    if (otherupperlim < 0):
+        otherupperlim = 0
+    
+    controlnum = int(size*0.021)
+    for i in range(controlnum):
+        numlist.append(random.uniform(lowerlim, upperlim))
+        numlist.append(random.uniform(otherupperlim, otherlowerlim))
+    
+    while (len(numlist) < size):
+        if (len(heightlist) == (size - 1)):
+            sum = 0
+            for h in range(len(numlist)):
+                sum = sum + numlist[h]
+            numlist.append((mean * size) - sum)
+        else:
+            upperlim = upperlim + std
+            numlist.append(random.uniform(mean, upperlim))
+            
+    return numlist
+    
 def randomfloat():
     return 1
     
 def locations(curvename, level):
     position = cmds.pointOnCurve(curvename, pr = level, turnOnPercentage = True)
-    print(level)
     return position
+    
+def randomLocation(size, spread):
+    singleCoordinates = normalDistrib(200, spread, size)
+    for i in range(len(singleCoordinates)):
+        singleCoordinates[i] = singleCoordinates[i] - 200
+    random.shuffle(singleCoordinates)
+    return singleCoordinates
     
 #main function    
 def createRock():
     inputname = cmds.textFieldGrp(nameparam, query = True, text = True)
    
     num = cmds.intSliderGrp("num", q = True, v=True)
+    spread = cmds.floatSliderGrp("spread", q = True, v = True)
+    
+    applyMaterials = cmds.checkBoxGrp('applyMaterials', q = True, v1=True)
     maincolor = cmds.colorSliderGrp('colorpicked', q = True, rgbValue = True)
     colorvariation = cmds.floatSliderGrp('colorvariation', q = True, v = True)
     colorvariation = colorvariation/20
@@ -91,9 +181,6 @@ def createRock():
         cmds.select(appendName(name, '.vtx[24]'))
         cmds.move(random.uniform(0.01, 0.2), 0, random.uniform(0.01,0.2), r=True)
         
-        """
-   
-        """
         #rotate
         cmds.select(name)
         degrees = str(random.uniform(0, 360)) + 'deg'
@@ -118,127 +205,129 @@ def createRock():
         cmds.u3dLayout(name+'.f[0:53]', res=256, scl=1, box=[0, 1, 0, 1])
         
         #material
-        shader = cmds.shadingNode('aiStandardSurface', asShader = True, n=name + 'shader')
-        
-        cmds.sets(renderable=True, noSurfaceShader= True, empty=True, n= 'aiSurfaceShader' + name + 'SG')
-        cmds.select(name)
-        cmds.hyperShade(assign = 'aiSurfaceShader' + name + 'SG')
-        cmds.connectAttr(name + 'shader.outColor', 'aiSurfaceShader' + name +'SG.surfaceShader', f=True)
-        
-        #initial noise
-        cmds.shadingNode('noise', asTexture=True, n = name + 'noise1')
-        
-        cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture1')
-        cmds.connectAttr (name + 'place2dTexture1.outUV', name + 'noise1.uv')
-        cmds.connectAttr(name + 'place2dTexture1.outUvFilterSize', name + 'noise1.uvFilterSize')
-        
-        cmds.shadingNode('simplexNoise', asTexture=True, n = name + 'simplexNoise1')
-        cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture2')
-        cmds.connectAttr(name + 'place2dTexture2.outUV', name + 'simplexNoise1.uv')
-        cmds.connectAttr(name +'place2dTexture2.outUvFilterSize', name + 'simplexNoise1.uvFilterSize')
-        cmds.connectAttr(name + 'simplexNoise1.outColor', name + 'noise1.colorOffset', force=True)
-        
-        cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply1')
-        cmds.connectAttr(name + 'noise1.outColor', name + 'aiMultiply1.input1', force = True)
-        
-        cmds.shadingNode('noise', asTexture=True, n = name + 'noiseColor')
-        cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture3')
-        cmds.connectAttr (name + 'place2dTexture3.outUV', name + 'noiseColor.uv')
-        cmds.connectAttr(name + 'place2dTexture3.outUvFilterSize', name + 'noiseColor.uvFilterSize')
-        cmds.connectAttr(name + 'noiseColor.outColor', name + 'aiMultiply1.input2', force = True)
-        #mountain texture
-        cmds.shadingNode('mountain', asTexture=True, n = name + 'mountain1')
-        cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture4')
-        cmds.connectAttr(name + 'place2dTexture4.outUV', name + 'mountain1.uv')
-        cmds.connectAttr(name + 'place2dTexture4.outUvFilterSize', name + 'mountain1.uvFilterSize')
-        
-        cmds.shadingNode('fractal', asTexture=True, n = name + 'fractal1') 
-        cmds.shadingNode('place2dTexture', asUtility=True, n=name + 'place2dTexture5')
-        cmds.connectAttr(name + 'place2dTexture5.outUV', name + 'fractal1.uv')
-        cmds.connectAttr(name + 'place2dTexture5.outUvFilterSize', name + 'fractal1.uvFilterSize')
-        cmds.shadingNode('aiAdd', asUtility=True, n = name + 'aiAdd1')
-        cmds.connectAttr(name + 'mountain1.outColor', name + 'aiAdd1.input1', force = True)
-        cmds.connectAttr(name + 'fractal1.outColor', name + 'aiAdd1.input2', force = True)
-        
-        cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply2')
-        cmds.connectAttr(name + 'aiMultiply1.outColor', name + 'aiMultiply2.input1', force = True)
-        cmds.connectAttr(name + 'aiAdd1.outColor', name + 'aiMultiply2.input2', force = True)
-        cmds.connectAttr(name + 'aiMultiply2.outColor', name + 'shader.baseColor', force = True)
-        
-        #adjustments
-        cmds.setAttr(name + 'noise1.amplitude', 0.42)
-        cmds.setAttr(name + 'noise1.ratio', 1.0)
-        cmds.setAttr(name + 'noise1.frequencyRatio', random.uniform(29.636, 96))
-        cmds.setAttr(name + 'noise1.frequency', random.uniform(88, 99))
-        cmds.setAttr(name + 'noise1.density', 1.0)
-        cmds.setAttr(name + 'noise1.spottyness', 0)
-        cmds.setAttr(name + 'noise1.sizeRand', random.uniform(0,1))
-        cmds.setAttr(name + 'noise1.randomness', 1.0)
-        cmds.setAttr(name + 'noise1.colorGain',  0.804, 0.771, 0.763, type='double3')
-        cmds.setAttr(name + 'noise1.alphaGain', 0.392)
-        
-        cmds.setAttr(name + 'simplexNoise1.amplitude', random.uniform(0.01, 0.7))
-        cmds.setAttr(name + 'simplexNoise1.threshold', 0.0)
-        cmds.setAttr(name + 'simplexNoise1.ratio', 0.707)
-        cmds.setAttr(name + 'simplexNoise1.frequency', 6.853)
-        cmds.setAttr(name + 'simplexNoise1.frequencyRatio', 1.0)
-        cmds.setAttr(name + 'simplexNoise1.gamma', .455)
-        if (random.uniform(0,1) < 0.2):
-            cmds.setAttr(name + 'simplexNoise1.noiseType', 2)
-            cmds.setAttr(name + 'simplexNoise1.scale', random.uniform(0,6.3))
-        else:
-            cmds.setAttr(name + 'simplexNoise1.scale', random.uniform(0,10))
+        if (applyMaterials == True):
             
-        cmds.setAttr(name + 'noiseColor.amplitude', random.uniform(0.182, 1))
-        cmds.setAttr(name + 'noiseColor.ratio', 0.643)
-        cmds.setAttr(name + 'noiseColor.frequencyRatio', 1.566)
-        cmds.setAttr(name + 'noiseColor.frequency', 9.091)
-        cmds.setAttr(name + 'noiseColor.noiseType', 4)
-        cmds.setAttr(name + 'noiseColor.colorGain', 0.712, 0.712, 0.712, type='double3')
-        #cmds.setAttr(name + 'noiseColor.colorGain', maincolor[0], maincolor[1], maincolor[2], type='double3')
-        hsv = colorsys.rgb_to_hsv(maincolor[0], maincolor[1], maincolor[2])
-        hue = hsv[0] + random.uniform(-colorvariation/2, colorvariation/2)
-        print(hsv)
-        rgb = colorsys.hsv_to_rgb(hue, hsv[1], hsv[2])
-        print(rgb)
-        cmds.setAttr(name + 'noiseColor.colorOffset', rgb[0], rgb[1], rgb[2], type='double3')
-        cmds.setAttr(name + 'noiseColor.alphaGain', 1.0)
-        
-        cmds.setAttr(name + 'mountain1.snowColor', 1, 1, 1, type='double3')
-        cmds.setAttr(name + 'mountain1.rockColor', 0.503, 0.503, 0.503, type='double3')
-        cmds.setAttr(name + 'mountain1.amplitude', 1.0)
-        cmds.setAttr(name + 'mountain1.snowRoughness', 0.4)
-        cmds.setAttr(name + 'mountain1.rockRoughness', 0.707)
-        cmds.setAttr(name + 'mountain1.boundary', random.uniform(0.874,1))
-        cmds.setAttr(name + 'mountain1.snowAltitude', random.uniform(0, 0.5))
-        cmds.setAttr(name + 'mountain1.snowDropoff', random.uniform(0, 2.0))
-        cmds.setAttr(name + 'mountain1.snowSlope', random.uniform(0, 3.0))
-        cmds.setAttr(name + 'mountain1.colorOffset', 0.041958, 0.041958, 0.041958, type='double3')
-        
-        cmds.setAttr(name + 'fractal1.amplitude', 1.0)
-        cmds.setAttr(name + 'fractal1.threshold', 0.0)
-        cmds.setAttr(name + 'fractal1.ratio', 0.972)
-        cmds.setAttr(name + 'fractal1.frequencyRatio', random.uniform(2.0, 3.4))
-        cmds.setAttr(name + 'fractal1.bias', 0.636)
-        cmds.setAttr(name + 'fractal1.colorOffset', 0.13986, 0.13986, 0.13986, type='double3')
-        
-        #for normal map
-        cmds.shadingNode('layeredTexture', asTexture=True, n = name + 'layeredTexture1') 
-        cmds.setAttr(name + 'layeredTexture1.inputs[0].color', 0.523, 0.523, 0.523, type="double3")
-        cmds.setAttr(name + 'layeredTexture1.inputs[0].alpha', 1)
-        cmds.setAttr(name + 'layeredTexture1.inputs[0].blendMode', 6)
-        cmds.connectAttr(name + 'mountain1.outAlpha', name + 'layeredTexture1.inputs[0].alpha', force = True)
-        cmds.setAttr(name + 'mountain1.alphaIsLuminance', 1)
-        cmds.setAttr(name + 'layeredTexture1.alphaIsLuminance', 1)
-        cmds.setAttr(name + 'layeredTexture1.inputs[1].color', 0.242, 0.242, 0.242, type="double3")
-        cmds.setAttr(name + 'layeredTexture1.inputs[1].alpha', 1)
-        cmds.setAttr(name + 'layeredTexture1.inputs[1].blendMode', 4)
-        cmds.connectAttr(name + 'fractal1.outAlpha', name + 'layeredTexture1.inputs[1].alpha', force = True)
-        cmds.setAttr(name + 'fractal1.alphaIsLuminance', 1)
-       
-        cmds.shadingNode('bump2d', asUtility=True, n = name + 'bump2d1')
-        cmds.connectAttr(name + 'layeredTexture1.outAlpha', name + 'bump2d1.bumpValue', f = True)
-        cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
+            shader = cmds.shadingNode('aiStandardSurface', asShader = True, n=name + 'shader')
+            
+            cmds.sets(renderable=True, noSurfaceShader= True, empty=True, n= 'aiSurfaceShader' + name + 'SG')
+            cmds.select(name)
+            cmds.hyperShade(assign = 'aiSurfaceShader' + name + 'SG')
+            cmds.connectAttr(name + 'shader.outColor', 'aiSurfaceShader' + name +'SG.surfaceShader', f=True)
+            
+            #initial noise
+            cmds.shadingNode('noise', asTexture=True, n = name + 'noise1')
+            
+            cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture1')
+            cmds.connectAttr (name + 'place2dTexture1.outUV', name + 'noise1.uv')
+            cmds.connectAttr(name + 'place2dTexture1.outUvFilterSize', name + 'noise1.uvFilterSize')
+            
+            cmds.shadingNode('simplexNoise', asTexture=True, n = name + 'simplexNoise1')
+            cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture2')
+            cmds.connectAttr(name + 'place2dTexture2.outUV', name + 'simplexNoise1.uv')
+            cmds.connectAttr(name +'place2dTexture2.outUvFilterSize', name + 'simplexNoise1.uvFilterSize')
+            cmds.connectAttr(name + 'simplexNoise1.outColor', name + 'noise1.colorOffset', force=True)
+            
+            cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply1')
+            cmds.connectAttr(name + 'noise1.outColor', name + 'aiMultiply1.input1', force = True)
+            
+            cmds.shadingNode('noise', asTexture=True, n = name + 'noiseColor')
+            cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture3')
+            cmds.connectAttr (name + 'place2dTexture3.outUV', name + 'noiseColor.uv')
+            cmds.connectAttr(name + 'place2dTexture3.outUvFilterSize', name + 'noiseColor.uvFilterSize')
+            cmds.connectAttr(name + 'noiseColor.outColor', name + 'aiMultiply1.input2', force = True)
+            #mountain texture
+            cmds.shadingNode('mountain', asTexture=True, n = name + 'mountain1')
+            cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture4')
+            cmds.connectAttr(name + 'place2dTexture4.outUV', name + 'mountain1.uv')
+            cmds.connectAttr(name + 'place2dTexture4.outUvFilterSize', name + 'mountain1.uvFilterSize')
+            
+            cmds.shadingNode('fractal', asTexture=True, n = name + 'fractal1') 
+            cmds.shadingNode('place2dTexture', asUtility=True, n=name + 'place2dTexture5')
+            cmds.connectAttr(name + 'place2dTexture5.outUV', name + 'fractal1.uv')
+            cmds.connectAttr(name + 'place2dTexture5.outUvFilterSize', name + 'fractal1.uvFilterSize')
+            cmds.shadingNode('aiAdd', asUtility=True, n = name + 'aiAdd1')
+            cmds.connectAttr(name + 'mountain1.outColor', name + 'aiAdd1.input1', force = True)
+            cmds.connectAttr(name + 'fractal1.outColor', name + 'aiAdd1.input2', force = True)
+            
+            cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply2')
+            cmds.connectAttr(name + 'aiMultiply1.outColor', name + 'aiMultiply2.input1', force = True)
+            cmds.connectAttr(name + 'aiAdd1.outColor', name + 'aiMultiply2.input2', force = True)
+            cmds.connectAttr(name + 'aiMultiply2.outColor', name + 'shader.baseColor', force = True)
+            
+            #adjustments
+            cmds.setAttr(name + 'noise1.amplitude', 0.42)
+            cmds.setAttr(name + 'noise1.ratio', 1.0)
+            cmds.setAttr(name + 'noise1.frequencyRatio', random.uniform(29.636, 96))
+            cmds.setAttr(name + 'noise1.frequency', random.uniform(88, 99))
+            cmds.setAttr(name + 'noise1.density', 1.0)
+            cmds.setAttr(name + 'noise1.spottyness', 0)
+            cmds.setAttr(name + 'noise1.sizeRand', random.uniform(0,1))
+            cmds.setAttr(name + 'noise1.randomness', 1.0)
+            cmds.setAttr(name + 'noise1.colorGain',  0.804, 0.771, 0.763, type='double3')
+            cmds.setAttr(name + 'noise1.alphaGain', 0.392)
+            
+            cmds.setAttr(name + 'simplexNoise1.amplitude', random.uniform(0.01, 0.7))
+            cmds.setAttr(name + 'simplexNoise1.threshold', 0.0)
+            cmds.setAttr(name + 'simplexNoise1.ratio', 0.707)
+            cmds.setAttr(name + 'simplexNoise1.frequency', 6.853)
+            cmds.setAttr(name + 'simplexNoise1.frequencyRatio', 1.0)
+            cmds.setAttr(name + 'simplexNoise1.gamma', .455)
+            if (random.uniform(0,1) < 0.2):
+                cmds.setAttr(name + 'simplexNoise1.noiseType', 2)
+                cmds.setAttr(name + 'simplexNoise1.scale', random.uniform(0,6.3))
+            else:
+                cmds.setAttr(name + 'simplexNoise1.scale', random.uniform(0,10))
+                
+            cmds.setAttr(name + 'noiseColor.amplitude', random.uniform(0.182, 1))
+            cmds.setAttr(name + 'noiseColor.ratio', 0.643)
+            cmds.setAttr(name + 'noiseColor.frequencyRatio', 1.566)
+            cmds.setAttr(name + 'noiseColor.frequency', 9.091)
+            cmds.setAttr(name + 'noiseColor.noiseType', 4)
+            cmds.setAttr(name + 'noiseColor.colorGain', 0.712, 0.712, 0.712, type='double3')
+            #cmds.setAttr(name + 'noiseColor.colorGain', maincolor[0], maincolor[1], maincolor[2], type='double3')
+            hsv = colorsys.rgb_to_hsv(maincolor[0], maincolor[1], maincolor[2])
+            hue = hsv[0] + random.uniform(-colorvariation/2, colorvariation/2)
+            print(hsv)
+            rgb = colorsys.hsv_to_rgb(hue, hsv[1], hsv[2])
+            print(rgb)
+            cmds.setAttr(name + 'noiseColor.colorOffset', rgb[0], rgb[1], rgb[2], type='double3')
+            cmds.setAttr(name + 'noiseColor.alphaGain', 1.0)
+            
+            cmds.setAttr(name + 'mountain1.snowColor', 1, 1, 1, type='double3')
+            cmds.setAttr(name + 'mountain1.rockColor', 0.503, 0.503, 0.503, type='double3')
+            cmds.setAttr(name + 'mountain1.amplitude', 1.0)
+            cmds.setAttr(name + 'mountain1.snowRoughness', 0.4)
+            cmds.setAttr(name + 'mountain1.rockRoughness', 0.707)
+            cmds.setAttr(name + 'mountain1.boundary', random.uniform(0.874,1))
+            cmds.setAttr(name + 'mountain1.snowAltitude', random.uniform(0, 0.5))
+            cmds.setAttr(name + 'mountain1.snowDropoff', random.uniform(0, 2.0))
+            cmds.setAttr(name + 'mountain1.snowSlope', random.uniform(0, 3.0))
+            cmds.setAttr(name + 'mountain1.colorOffset', 0.041958, 0.041958, 0.041958, type='double3')
+            
+            cmds.setAttr(name + 'fractal1.amplitude', 1.0)
+            cmds.setAttr(name + 'fractal1.threshold', 0.0)
+            cmds.setAttr(name + 'fractal1.ratio', 0.972)
+            cmds.setAttr(name + 'fractal1.frequencyRatio', random.uniform(2.0, 3.4))
+            cmds.setAttr(name + 'fractal1.bias', 0.636)
+            cmds.setAttr(name + 'fractal1.colorOffset', 0.13986, 0.13986, 0.13986, type='double3')
+            
+            #for normal map
+            cmds.shadingNode('layeredTexture', asTexture=True, n = name + 'layeredTexture1') 
+            cmds.setAttr(name + 'layeredTexture1.inputs[0].color', 0.523, 0.523, 0.523, type="double3")
+            cmds.setAttr(name + 'layeredTexture1.inputs[0].alpha', 1)
+            cmds.setAttr(name + 'layeredTexture1.inputs[0].blendMode', 6)
+            cmds.connectAttr(name + 'mountain1.outAlpha', name + 'layeredTexture1.inputs[0].alpha', force = True)
+            cmds.setAttr(name + 'mountain1.alphaIsLuminance', 1)
+            cmds.setAttr(name + 'layeredTexture1.alphaIsLuminance', 1)
+            cmds.setAttr(name + 'layeredTexture1.inputs[1].color', 0.242, 0.242, 0.242, type="double3")
+            cmds.setAttr(name + 'layeredTexture1.inputs[1].alpha', 1)
+            cmds.setAttr(name + 'layeredTexture1.inputs[1].blendMode', 4)
+            cmds.connectAttr(name + 'fractal1.outAlpha', name + 'layeredTexture1.inputs[1].alpha', force = True)
+            cmds.setAttr(name + 'fractal1.alphaIsLuminance', 1)
+           
+            cmds.shadingNode('bump2d', asUtility=True, n = name + 'bump2d1')
+            cmds.connectAttr(name + 'layeredTexture1.outAlpha', name + 'bump2d1.bumpValue', f = True)
+            cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
         
      
         #smooth
