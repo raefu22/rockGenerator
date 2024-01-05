@@ -15,12 +15,10 @@ def hideColorOp(*args):
 def showScatter(*args):
     showCheckbox = cmds.checkBoxGrp(useCurve, q = True)
     cmds.floatSliderGrp(locationScatter, edit=True, enable=True)
-    #cmds.text(curveInstructions, enable=False)
    
 def hideScatter(*args):
     showCheckbox = cmds.checkBoxGrp(useCurve, q = True, vis = False, v1 = False)
     cmds.floatSliderGrp(locationScatter, edit=True, enable=False)
-    #cmds.text(curveInstructions, enable=True)
 
 #UI
 window = cmds.window(title='Rock Generator', menuBar = True, width=250)
@@ -45,7 +43,6 @@ useCurve = cmds.checkBoxGrp('useCurve', numberOfCheckBoxes=1, label='Use Curve '
 
 locationScatter = cmds.floatSliderGrp("spread", label="Location Scatter ", field = True, min = 1, max = 50, v = 20)
 
-#cmds.text(curveInstructions, enable=False)
 cmds.separator(height = 10)
 applyMaterials = cmds.checkBoxGrp("applyMaterials", numberOfCheckBoxes=1, label='Apply Materials ', v1=False, onc = showColorOp, ofc = hideColorOp)
 
@@ -235,6 +232,7 @@ def createRock():
             cmds.connectAttr (name + 'place2dTexture3.outUV', name + 'noiseColor.uv')
             cmds.connectAttr(name + 'place2dTexture3.outUvFilterSize', name + 'noiseColor.uvFilterSize')
             cmds.connectAttr(name + 'noiseColor.outColor', name + 'aiMultiply1.input2', force = True)
+            
             #mountain texture
             cmds.shadingNode('mountain', asTexture=True, n = name + 'mountain1')
             cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture4')
@@ -284,12 +282,11 @@ def createRock():
             cmds.setAttr(name + 'noiseColor.frequency', 9.091)
             cmds.setAttr(name + 'noiseColor.noiseType', 4)
             cmds.setAttr(name + 'noiseColor.colorGain', 0.712, 0.712, 0.712, type='double3')
-            #cmds.setAttr(name + 'noiseColor.colorGain', maincolor[0], maincolor[1], maincolor[2], type='double3')
+            
             hsv = colorsys.rgb_to_hsv(maincolor[0], maincolor[1], maincolor[2])
             hue = hsv[0] + random.uniform(-colorvariation/2, colorvariation/2)
-            print(hsv)
             rgb = colorsys.hsv_to_rgb(hue, hsv[1], hsv[2])
-            print(rgb)
+            
             cmds.setAttr(name + 'noiseColor.colorOffset', rgb[0], rgb[1], rgb[2], type='double3')
             cmds.setAttr(name + 'noiseColor.alphaGain', 1.0)
             
@@ -330,6 +327,22 @@ def createRock():
             cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
         
      
+            #moss
+            '''
+            cmds.shadingNode('fractal', asTexture=True, n = name + 'mossFractal1') 
+            cmds.shadingNode('place2dTexture', asUtility=True, n=name + 'place2dTexture6')
+            cmds.connectAttr(name + 'place2dTexture6.outUV', name + 'mossFractal1.uv')
+            cmds.connectAttr(name + 'place2dTexture6.outUvFilterSize', name + 'mossFractal1.uvFilterSize')
+            
+            cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply3')
+            cmds.connectAttr(name + 'mossFractal1.outColor', name + 'aiMultiply3.input2', force = True)
+            
+            cmds.shadingNode('noise', asTexture=True, n = name + 'mossNoise1')
+            cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture7')
+            cmds.connectAttr (name + 'place2dTexture7.outUV', name + 'noiseColor.uv')
+            cmds.connectAttr(name + 'place2dTexture7.outUvFilterSize', name + 'mossNoise.uvFilterSize')
+            cmds.connectAttr(name + 'mossNoise.outColor', name + 'aiMultiply3.input2', force = True)
+            '''
         #smooth
         cmds.select(name)
         cmds.polySmooth(mth=0, sdt=2, ovb=1, ofb=3, ofc=0, ost=0, ocr=0, dv=2, bnr=1, c=1, kb=1, ksb=1, khe=0, kt=1, kmb=1, suv=1, peh=0, sl=1, dpe=1, ps=0.1, ro=1, ch=1)
