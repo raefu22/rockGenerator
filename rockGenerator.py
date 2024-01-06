@@ -6,11 +6,13 @@ def showColorOp(*args):
     showCheckbox = cmds.checkBoxGrp(applyMaterials, q = True)
     cmds.colorSliderGrp(pickColor, edit=True, enable=True)
     cmds.floatSliderGrp(colorSpread, edit=True, enable=True)
+    cmds.checkBoxGrp(addMoss, edit=True, enable=True)
    
 def hideColorOp(*args):
     showCheckbox = cmds.checkBoxGrp(applyMaterials, q = True, vis = False, v1 = False)
     cmds.colorSliderGrp(pickColor, edit=True, enable=False)
     cmds.floatSliderGrp(colorSpread, edit=True, enable=False)
+    cmds.checkBoxGrp(addMoss, edit=True, enable=False)
     
 def showScatter(*args):
     showCheckbox = cmds.checkBoxGrp(useCurve, q = True)
@@ -19,6 +21,14 @@ def showScatter(*args):
 def hideScatter(*args):
     showCheckbox = cmds.checkBoxGrp(useCurve, q = True, vis = False, v1 = False)
     cmds.floatSliderGrp(locationScatter, edit=True, enable=False)
+
+def showMossOp(*args):
+    showCheckbox = cmds.checkBoxGrp(addMoss, q = True)
+    cmds.floatSliderGrp(mossAmount, edit=True, enable=True)
+   
+def hideMossOp(*args):
+    showCheckbox = cmds.checkBoxGrp(addMoss, q = True, vis = False, v1 = False)
+    cmds.floatSliderGrp(mossAmount, edit=True, enable=False)
 
 #UI
 window = cmds.window(title='Rock Generator', menuBar = True, width=250)
@@ -53,6 +63,14 @@ colorSpread = cmds.floatSliderGrp('colorvariation', label="Color Variation ", fi
 
 cmds.colorSliderGrp(pickColor, edit=True, enable=False)
 cmds.floatSliderGrp(colorSpread, edit=True, enable=False)
+
+cmds.separator(height = 10)
+addMoss = cmds.checkBoxGrp("addMoss", numberOfCheckBoxes=1, label='Add Moss ', v1=False, onc = showMossOp, ofc = hideMossOp)
+cmds.checkBoxGrp(addMoss, edit=True, enable=False)
+cmds.separator(height = 5)
+mossAmount = cmds.floatSliderGrp('mossAmount', label="Moss Amount ", field = True, min = 0, max = 10, v = 0.5)
+
+cmds.floatSliderGrp(mossAmount, edit=True, enable=False)
 
 cmds.separator(height = 10)
 
@@ -140,6 +158,8 @@ def createRock():
     colorvariation = colorvariation/20
     curvename = cmds.ls(selection = True)
     
+    addMossMaterial= cmds.checkBoxGrp('addMoss', q = True, v1=True)
+    mossSpread = cmds.floatSliderGrp('mossAmount', q = True, v = True)
     for x in range(1, num+1):
         #obj name
         name = inputname + str(x)
@@ -328,21 +348,21 @@ def createRock():
         
      
             #moss
-            '''
-            cmds.shadingNode('fractal', asTexture=True, n = name + 'mossFractal1') 
-            cmds.shadingNode('place2dTexture', asUtility=True, n=name + 'place2dTexture6')
-            cmds.connectAttr(name + 'place2dTexture6.outUV', name + 'mossFractal1.uv')
-            cmds.connectAttr(name + 'place2dTexture6.outUvFilterSize', name + 'mossFractal1.uvFilterSize')
-            
-            cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply3')
-            cmds.connectAttr(name + 'mossFractal1.outColor', name + 'aiMultiply3.input2', force = True)
-            
-            cmds.shadingNode('noise', asTexture=True, n = name + 'mossNoise1')
-            cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture7')
-            cmds.connectAttr (name + 'place2dTexture7.outUV', name + 'noiseColor.uv')
-            cmds.connectAttr(name + 'place2dTexture7.outUvFilterSize', name + 'mossNoise.uvFilterSize')
-            cmds.connectAttr(name + 'mossNoise.outColor', name + 'aiMultiply3.input2', force = True)
-            '''
+            if (addMossMaterial == True):
+                cmds.shadingNode('fractal', asTexture=True, n = name + 'mossFractal1') 
+                cmds.shadingNode('place2dTexture', asUtility=True, n=name + 'place2dTexture6')
+                cmds.connectAttr(name + 'place2dTexture6.outUV', name + 'mossFractal1.uv')
+                cmds.connectAttr(name + 'place2dTexture6.outUvFilterSize', name + 'mossFractal1.uvFilterSize')
+                
+                cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply3')
+                cmds.connectAttr(name + 'mossFractal1.outColor', name + 'aiMultiply3.input2', force = True)
+                
+                cmds.shadingNode('noise', asTexture=True, n = name + 'mossNoise1')
+                cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture7')
+                cmds.connectAttr (name + 'place2dTexture7.outUV', name + 'noiseColor.uv')
+                cmds.connectAttr(name + 'place2dTexture7.outUvFilterSize', name + 'mossNoise.uvFilterSize')
+                cmds.connectAttr(name + 'mossNoise.outColor', name + 'aiMultiply3.input2', force = True)
+           
         #smooth
         cmds.select(name)
         cmds.polySmooth(mth=0, sdt=2, ovb=1, ofb=3, ofc=0, ost=0, ocr=0, dv=2, bnr=1, c=1, kb=1, ksb=1, khe=0, kt=1, kmb=1, suv=1, peh=0, sl=1, dpe=1, ps=0.1, ro=1, ch=1)
