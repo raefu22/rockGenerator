@@ -272,6 +272,24 @@ def createRock():
             cmds.connectAttr(name + 'aiAdd1.outColor', name + 'aiMultiply2.input2', force = True)
             cmds.connectAttr(name + 'aiMultiply2.outColor', name + 'shader.baseColor', force = True)
             
+            cmds.shadingNode('layeredTexture', asTexture=True, n = name + 'layeredTextureMaster') 
+            cmds.connectAttr(name + 'aiMultiply2.outColor', name + 'layeredTextureMaster.inputs[0].color', force = True)
+            cmds.shadingNode('luminance', asUtility=True, n = name + 'luminance1')
+            cmds.connectAttr(name + 'layeredTextureMaster.outColor', name + 'luminance1.value', force = True)
+            
+            cmds.shadingNode('bump2d', asUtility=True, n = name + 'bump2d1')
+            cmds.connectAttr(name + 'luminance1.outValue', name + 'bump2d1.bumpValue', f = True)
+            cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
+            
+            cmds.shadingNode('contrast', asUtility=True, n = name + 'roughnessContrast')
+            cmds.connectAttr(name + 'luminance1.outValue', name + 'roughnessContrast.valueX', f = True)
+            cmds.connectAttr(name + 'luminance1.outValue', name + 'roughnessContrast.valueY', f = True)
+            cmds.connectAttr(name + 'luminance1.outValue', name + 'roughnessContrast.valueZ', f = True)
+            cmds.connectAttr(name + 'roughnessContrast.outValueX', name + 'shader.diffuseRoughness', force = True)
+            cmds.connectAttr(name + 'roughnessContrast.outValueX', name + 'shader.specularRoughness', force = True)
+            
+            cmds.connectAttr(name + 'layeredTextureMaster.outColor', name + 'shader.baseColor', force = True)
+            
             #adjustments
             cmds.setAttr(name + 'noise1.amplitude', 0.42)
             cmds.setAttr(name + 'noise1.ratio', 1.0)
@@ -328,6 +346,7 @@ def createRock():
             cmds.setAttr(name + 'fractal1.bias', 0.636)
             cmds.setAttr(name + 'fractal1.colorOffset', 0.13986, 0.13986, 0.13986, type='double3')
             
+            '''
             #for normal map
             cmds.shadingNode('layeredTexture', asTexture=True, n = name + 'layeredTexture1') 
             cmds.setAttr(name + 'layeredTexture1.inputs[0].color', 0.523, 0.523, 0.523, type="double3")
@@ -339,13 +358,14 @@ def createRock():
             cmds.setAttr(name + 'layeredTexture1.inputs[1].color', 0.242, 0.242, 0.242, type="double3")
             cmds.setAttr(name + 'layeredTexture1.inputs[1].alpha', 1)
             cmds.setAttr(name + 'layeredTexture1.inputs[1].blendMode', 4)
+            
             cmds.connectAttr(name + 'fractal1.outAlpha', name + 'layeredTexture1.inputs[1].alpha', force = True)
             cmds.setAttr(name + 'fractal1.alphaIsLuminance', 1)
            
             cmds.shadingNode('bump2d', asUtility=True, n = name + 'bump2d1')
             cmds.connectAttr(name + 'layeredTexture1.outAlpha', name + 'bump2d1.bumpValue', f = True)
             cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
-        
+            '''        
      
             #moss
             if (addMossMaterial == True):
@@ -355,14 +375,137 @@ def createRock():
                 cmds.connectAttr(name + 'place2dTexture6.outUvFilterSize', name + 'mossFractal1.uvFilterSize')
                 
                 cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply3')
-                cmds.connectAttr(name + 'mossFractal1.outColor', name + 'aiMultiply3.input2', force = True)
+                cmds.connectAttr(name + 'mossFractal1.outColor', name + 'aiMultiply3.input1', force = True)
                 
-                cmds.shadingNode('noise', asTexture=True, n = name + 'mossNoise1')
+                cmds.shadingNode('noise', asTexture=True, n = name + 'mossColor')
                 cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture7')
-                cmds.connectAttr (name + 'place2dTexture7.outUV', name + 'noiseColor.uv')
-                cmds.connectAttr(name + 'place2dTexture7.outUvFilterSize', name + 'mossNoise.uvFilterSize')
-                cmds.connectAttr(name + 'mossNoise.outColor', name + 'aiMultiply3.input2', force = True)
-           
+                cmds.connectAttr (name + 'place2dTexture7.outUV', name + 'mossColor.uv')
+                cmds.connectAttr(name + 'place2dTexture7.outUvFilterSize', name + 'mossColor.uvFilterSize')
+                cmds.connectAttr(name + 'mossColor.outColor', name + 'aiMultiply3.input2', force = True)
+                
+                cmds.shadingNode('aiMultiply', asUtility=True, n = name + 'aiMultiply4')
+                cmds.connectAttr(name + 'aiMultiply3.outColor', name + 'aiMultiply4.input1', force = True)
+                
+                cmds.shadingNode('simplexNoise', asTexture=True, n = name + 'mossSimplexNoise1')
+                cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture8')
+                cmds.connectAttr(name + 'place2dTexture8.outUV', name + 'mossSimplexNoise1.uv')
+                cmds.connectAttr(name +'place2dTexture8.outUvFilterSize', name + 'mossSimplexNoise1.uvFilterSize')
+                
+                cmds.shadingNode('reverse', asUtility=True, n = name + 'reverse1')
+                cmds.connectAttr(name + 'mossSimplexNoise1.outColor', name + 'reverse1.input')
+                cmds.shadingNode('contrast', asUtility=True, n = name + 'contrast1')
+                cmds.connectAttr(name + 'reverse1.output', name + 'contrast1.value')
+                cmds.shadingNode('aiAdd', asUtility=True, n = name + 'aiAdd2')
+                cmds.connectAttr(name + 'contrast1.outValue', name + 'aiAdd2.input1')
+                
+                cmds.shadingNode('simplexNoise', asTexture=True, n = name + 'mossSimplexNoise2')
+                cmds.shadingNode('place2dTexture', asUtility=True, n = name + 'place2dTexture9')
+                cmds.connectAttr(name + 'place2dTexture9.outUV', name + 'mossSimplexNoise2.uv')
+                cmds.connectAttr(name +'place2dTexture9.outUvFilterSize', name + 'mossSimplexNoise2.uvFilterSize')
+                
+                cmds.shadingNode('reverse', asUtility=True, n = name + 'reverse2')
+                cmds.connectAttr(name + 'mossSimplexNoise2.outColor', name + 'reverse2.input')
+                cmds.shadingNode('contrast', asUtility=True, n = name + 'contrast2')
+                cmds.connectAttr(name + 'reverse2.output', name + 'contrast2.value')
+                cmds.connectAttr(name + 'contrast2.outValue', name + 'aiAdd2.input2')
+                
+                cmds.shadingNode('fractal', asTexture=True, n = name + 'mossFractal2') 
+                cmds.shadingNode('place2dTexture', asUtility=True, n=name + 'place2dTexture10')
+                cmds.connectAttr(name + 'place2dTexture10.outUV', name + 'mossFractal2.uv')
+                cmds.connectAttr(name + 'place2dTexture10.outUvFilterSize', name + 'mossFractal2.uvFilterSize')
+                cmds.shadingNode('contrast', asUtility=True, n = name + 'contrast3')
+                cmds.connectAttr(name + 'mossFractal2.outColor', name + 'contrast3.value')
+                cmds.shadingNode('aiMax', asUtility=True, n = name + 'aiMax1')
+                cmds.connectAttr(name + 'aiAdd2.outColor', name + 'aiMax1.input1')
+                cmds.connectAttr(name + 'contrast3.outValue', name + 'aiMax1.input2')
+                cmds.connectAttr(name + 'aiMax1.outColor', name + 'aiMultiply4.input2', force = True)
+                
+                cmds.connectAttr(name + 'aiMultiply2.outColor', name + 'layeredTextureMaster.inputs[1].color', force = True)
+                cmds.shadingNode('noise', asTexture=True, n = name + 'mossMask')
+                cmds.shadingNode('place2dTexture', asUtility = True, n = name + 'place2dTexture11')
+                cmds.connectAttr (name + 'place2dTexture11.outUV', name + 'mossMask.uv')
+                cmds.connectAttr(name + 'place2dTexture11.outUvFilterSize', name + 'mossMask.uvFilterSize')
+                cmds.connectAttr(name + 'mossMask.outColor.outColorR', name + 'layeredTextureMaster.inputs[0].alpha', force = True)
+                cmds.connectAttr(name + 'aiMultiply4.outColor', name + 'layeredTextureMaster.inputs[0].color', force = True)
+                
+                '''
+                cmds.setAttr(name + 'layeredTextureMaster.inputs[0].color', 0.523, 0.523, 0.523, type="double3")
+                cmds.setAttr(name + 'layeredTextureMaster.inputs[0].alpha', 1)
+                cmds.setAttr(name + 'layeredTextureMaster.inputs[0].blendMode', 6)
+                cmds.connectAttr(name + 'bump2d1.outNormal', name + 'shader.normalCamera')
+                '''
+                
+                #adjustments
+                
+                cmds.setAttr(name + 'mossFractal1.amplitude', 1)
+                cmds.setAttr(name + 'mossFractal1.ratio', 0.707)
+                cmds.setAttr(name + 'mossFractal1.frequencyRatio', 3.077)
+                cmds.setAttr(name + 'mossFractal1.colorGain', 0.75, 0.8, 0.7, type='double3') #strange values when looking , 
+                cmds.setAttr(name + 'mossFractal1.colorOffset', 0.156, 0.174, 0.133, type='double3')
+                
+                cmds.setAttr(name + 'mossColor.amplitude', 1)
+                cmds.setAttr(name + 'mossColor.ratio', 0.923)
+                cmds.setAttr(name + 'mossColor.frequencyRatio', 0.923)
+                cmds.setAttr(name + 'mossColor.frequency', 8)
+                cmds.setAttr(name + 'mossColor.noiseType', 4)
+                cmds.setAttr(name + 'mossColor.numWaves', 5)
+                cmds.setAttr(name + 'mossColor.colorGain', 0.172, 0.199, 0.062, type='double3')
+                cmds.setAttr(name + 'mossColor.colorOffset', 0.046, 0.049, 0.044, type='double3')
+                 
+                cmds.setAttr(name + 'mossSimplexNoise1.scale', 39.434) 
+                cmds.setAttr(name + 'mossSimplexNoise1.amplitude', 0.806)
+                cmds.setAttr(name + 'mossSimplexNoise1.ratio', 0.707)
+                cmds.setAttr(name + 'mossSimplexNoise1.octaves', 3)
+                cmds.setAttr(name + 'mossSimplexNoise1.frequency', 9.606)
+                cmds.setAttr(name + 'mossSimplexNoise1.frequencyRatio', 1)
+                cmds.setAttr(name + 'mossSimplexNoise1.noiseType', 1)
+                
+                cmds.setAttr(name + 'contrast1.contrastX', 3)
+                cmds.setAttr(name + 'contrast1.contrastY', 3)
+                cmds.setAttr(name + 'contrast1.contrastZ', 3)
+                cmds.setAttr(name + 'contrast1.biasX', 0.5)
+                cmds.setAttr(name + 'contrast1.biasY', 0.5)
+                cmds.setAttr(name + 'contrast1.biasZ', 0.5)
+                
+                cmds.setAttr(name + 'mossSimplexNoise2.scale', 67.158) 
+                cmds.setAttr(name + 'mossSimplexNoise2.amplitude', 0.806)
+                cmds.setAttr(name + 'mossSimplexNoise2.ratio', 0.707)
+                cmds.setAttr(name + 'mossSimplexNoise2.octaves', 1)
+                cmds.setAttr(name + 'mossSimplexNoise2.frequency', 9.606)
+                cmds.setAttr(name + 'mossSimplexNoise2.frequencyRatio', 1)
+                cmds.setAttr(name + 'mossSimplexNoise2.noiseType', 1)
+                
+                cmds.setAttr(name + 'contrast2.contrastX', 4)
+                cmds.setAttr(name + 'contrast2.contrastY', 4)
+                cmds.setAttr(name + 'contrast2.contrastZ', 4)
+                cmds.setAttr(name + 'contrast2.biasX', 0.5)
+                cmds.setAttr(name + 'contrast2.biasY', 0.5)
+                cmds.setAttr(name + 'contrast2.biasZ', 0.5)
+                
+                cmds.setAttr(name + 'mossFractal2.amplitude', 1)
+                cmds.setAttr(name + 'mossFractal2.ratio', 0.776)
+                cmds.setAttr(name + 'mossFractal2.frequencyRatio', 7.545)
+                cmds.setAttr(name + 'mossFractal2.levelMin', 25)
+                cmds.setAttr(name + 'mossFractal2.levelMax', 8.939)
+                cmds.setAttr(name + 'mossFractal2.bias', -0.139)
+                cmds.setAttr(name + 'mossFractal2.alphaIsLuminance', 1)
+                
+                cmds.setAttr(name + 'contrast3.contrastX', 5)
+                cmds.setAttr(name + 'contrast3.contrastY', 5)
+                cmds.setAttr(name + 'contrast3.contrastZ', 5)
+                cmds.setAttr(name + 'contrast3.biasX', 0.5)
+                cmds.setAttr(name + 'contrast3.biasY', 0.5)
+                cmds.setAttr(name + 'contrast3.biasZ', 0.5)
+                
+                cmds.setAttr(name + 'layeredTextureMaster.inputs[0].blendMode', 1)
+                
+                cmds.setAttr(name + 'roughnessContrast.contrastX', 0.2)
+                cmds.setAttr(name + 'roughnessContrast.contrastY', 0.2)
+                cmds.setAttr(name + 'roughnessContrast.contrastZ', 0.2)
+                cmds.setAttr(name + 'roughnessContrast.biasX', 0.02)
+                cmds.setAttr(name + 'roughnessContrast.biasY', 0.02)
+                cmds.setAttr(name + 'roughnessContrast.biasZ', 0.02)
+                
         #smooth
         cmds.select(name)
         cmds.polySmooth(mth=0, sdt=2, ovb=1, ofb=3, ofc=0, ost=0, ocr=0, dv=2, bnr=1, c=1, kb=1, ksb=1, khe=0, kt=1, kmb=1, suv=1, peh=0, sl=1, dpe=1, ps=0.1, ro=1, ch=1)
