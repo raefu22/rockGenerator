@@ -159,7 +159,7 @@ def createRock():
     curvename = cmds.ls(selection = True)
     
     addMossMaterial= cmds.checkBoxGrp('addMoss', q = True, v1=True)
-    mossSpread = cmds.floatSliderGrp('mossAmount', q = True, v = True)
+    mossAmount = cmds.floatSliderGrp('mossAmount', q = True, v = True)
     for x in range(1, num+1):
         #obj name
         name = inputname + str(x)
@@ -506,6 +506,7 @@ def createRock():
                 cmds.setAttr(name + 'roughnessContrast.biasY', 0.02)
                 cmds.setAttr(name + 'roughnessContrast.biasZ', 0.02)
                 
+                cmds.setAttr(name + 'mossMask.amplitude', mossAmount) #NEEDS TO BE POLISHED
         #smooth
         cmds.select(name)
         cmds.polySmooth(mth=0, sdt=2, ovb=1, ofb=3, ofc=0, ost=0, ocr=0, dv=2, bnr=1, c=1, kb=1, ksb=1, khe=0, kt=1, kmb=1, suv=1, peh=0, sl=1, dpe=1, ps=0.1, ro=1, ch=1)
