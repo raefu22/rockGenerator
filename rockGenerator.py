@@ -44,7 +44,7 @@ cmds.text('            ')
 cmds.separator(height = 10)
 nameparam = cmds.textFieldGrp(label = 'Name ')
 cmds.separator(height = 10)
-cmds.intSliderGrp("num", label="Number of Rocks ", field = True, min = 1, max = 40, v = 15)
+cmds.intSliderGrp("num", label="Number of Rocks ", field = True, min = 1, max = 150, v = 15)
 cmds.separator(height = 10)
 
 curveInstructions = cmds.text('                Select an EP Curve or Bezier Curve to place the rocks along?')
