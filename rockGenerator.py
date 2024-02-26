@@ -1,6 +1,7 @@
 import maya.cmds as cmds
 import random
 import colorsys
+import maya.OpenMaya as OpenMaya
 
 def showColorOp(*args):
     showCheckbox = cmds.checkBoxGrp(applyMaterials, q = True)
@@ -46,7 +47,8 @@ nameparam = cmds.textFieldGrp(label = 'Name ')
 cmds.separator(height = 10)
 cmds.intSliderGrp("num", label="Number of Rocks ", field = True, min = 1, max = 150, v = 15)
 cmds.separator(height = 10)
-
+cmds.checkBoxGrp('isWall', numberOfCheckBoxes=1, label='Make it a wall ', v1=False)
+cmds.separator(height = 10)
 curveInstructions = cmds.text('                Select an EP Curve or Bezier Curve to place the rocks along?')
 cmds.separator(height = 5)
 useCurve = cmds.checkBoxGrp('useCurve', numberOfCheckBoxes=1, label='Use Curve ', v1=False, onc = hideScatter, ofc = showScatter)
@@ -145,13 +147,16 @@ def randomLocation(size, spread):
     random.shuffle(singleCoordinates)
     return singleCoordinates
     
+    #WIP rock wall: randomly place the rocks in position after creating all of the rocks (outside for loop), then check for ||| or boolean the rocks and then move it slightly?
+
+		
 #main function    
 def createRock():
     inputname = cmds.textFieldGrp(nameparam, query = True, text = True)
    
     num = cmds.intSliderGrp("num", q = True, v=True)
     spread = cmds.floatSliderGrp("spread", q = True, v = True)
-    
+    isWall = cmds.checkBoxGrp('isWall', q = True, v1=True)
     applyMaterials = cmds.checkBoxGrp('applyMaterials', q = True, v1=True)
     maincolor = cmds.colorSliderGrp('colorpicked', q = True, rgbValue = True)
     colorvariation = cmds.floatSliderGrp('colorvariation', q = True, v = True)
@@ -205,8 +210,9 @@ def createRock():
         
         #location
         cmds.select(name)
-        position = locations(curvename, (x-0.0)/num)
-        cmds.move(position[0], position[1], position[2], relative = True)
+        if (not isWall):
+            position = locations(curvename, (x-0.0)/num)
+            cmds.move(position[0], position[1], position[2], relative = True)
         
         #UVs
         cmds.polyProjection(name+".f[0:53]", md = 'y')
